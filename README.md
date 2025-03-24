@@ -1,0 +1,1 @@
+# wakamiti-chatgpt-plugin
