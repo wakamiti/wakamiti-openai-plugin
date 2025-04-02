@@ -31,6 +31,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,7 +53,7 @@ public class FeatureGeneratorTest {
     };
     private static final Path TEMP_PATH = Path.of("target/output");
     private static final Integer PORT = 4321;
-    private static final String BASE_URL = MessageFormat.format("http://localhost:{0}", PORT.toString());
+    private static final String MOCKSERVER_URL = MessageFormat.format("http://localhost:{0}", PORT.toString());
     private static final ClientAndServer server = startClientAndServer(PORT);
     private static final List<File> FEATURES = Stream.of(
                     "pets1/getPets", "pets1/postPets", "pets2/getPetsById", "deletePetsById")
@@ -62,12 +63,6 @@ public class FeatureGeneratorTest {
     @AfterAll
     public static void tearDown() {
         server.close();
-    }
-
-    private static <T> T getField(Object o, String field, Class<T> cls) throws NoSuchFieldException, IllegalAccessException {
-        Field buildField = o.getClass().getDeclaredField(field);
-        buildField.setAccessible(true);
-        return cls.cast(buildField.get(o));
     }
 
     @BeforeEach
@@ -83,6 +78,8 @@ public class FeatureGeneratorTest {
             String schema
     ) throws IOException, NoSuchFieldException, IllegalAccessException {
         // Prepare
+
+        // Mocked OpenAI API response for any operation
         mockServer(
                 request()
                         .withMethod("POST")
@@ -95,7 +92,7 @@ public class FeatureGeneratorTest {
         );
 
         FeatureGenerator featureGenerator = new FeatureGenerator("", content(schema));
-        getField(featureGenerator, "clientBuilder", OpenAIOkHttpClient.Builder.class).baseUrl(BASE_URL);
+        getField(featureGenerator, "clientBuilder", OpenAIOkHttpClient.Builder.class).baseUrl(MOCKSERVER_URL);
 
 
         // Act
@@ -113,6 +110,8 @@ public class FeatureGeneratorTest {
             String schema
     ) throws NoSuchFieldException, IllegalAccessException {
         // Prepare
+
+        // Mocked OpenAI API response for any operation
         mockServer(
                 request()
                         .withMethod("POST")
@@ -125,7 +124,7 @@ public class FeatureGeneratorTest {
         );
 
         FeatureGenerator featureGenerator = new FeatureGenerator("", url(schema).toExternalForm());
-        getField(featureGenerator, "clientBuilder", OpenAIOkHttpClient.Builder.class).baseUrl(BASE_URL);
+        getField(featureGenerator, "clientBuilder", OpenAIOkHttpClient.Builder.class).baseUrl(MOCKSERVER_URL);
 
 
         // Act
@@ -141,11 +140,16 @@ public class FeatureGeneratorTest {
     public void testGenerateTestWhenHttpURLWithSuccess()
             throws IOException, NoSuchFieldException, IllegalAccessException {
         // Prepare
+        Pattern pattern = Pattern.compile(
+                Pattern.quote(TEMP_PATH.toString()) + "([/\\\\]([^/\\\\]++))?[/\\\\]([^/\\\\]+?)\\.feature$"
+        );
+
+        // Mocked OpenAI API response for each operation
         for (File file : FEATURES) {
-            Matcher matcher = Pattern.compile(
-                            Pattern.quote(TEMP_PATH.toString()) + "([/\\\\]([^/\\\\]++))?[/\\\\]([^/\\\\]+?)\\.feature$")
-                    .matcher(file.toString());
-            matcher.find();
+            Matcher matcher = pattern.matcher(file.toString());
+            if (!matcher.find()) {
+                throw new NoSuchElementException("Cannot find the operation info in file: " + file);
+            }
             String apiId = matcher.group(2);
             String operationId = matcher.group(3);
 
@@ -165,7 +169,7 @@ public class FeatureGeneratorTest {
             );
         }
 
-
+        // Mocked response for swagger based on http url
         mockServer(
                 request()
                         .withMethod("GET")
@@ -176,9 +180,8 @@ public class FeatureGeneratorTest {
                         .withBody(content("examples/v3.0/petstore.json"))
         );
 
-        FeatureGenerator featureGenerator = new FeatureGenerator("", BASE_URL + "/api_docs");
-        getField(featureGenerator, "clientBuilder", OpenAIOkHttpClient.Builder.class).baseUrl(BASE_URL);
-
+        FeatureGenerator featureGenerator = new FeatureGenerator("", MOCKSERVER_URL + "/api_docs");
+        getField(featureGenerator, "clientBuilder", OpenAIOkHttpClient.Builder.class).baseUrl(MOCKSERVER_URL);
 
         // Act
         featureGenerator.generate(TEMP_PATH.toAbsolutePath().toString(), "en");
@@ -188,20 +191,41 @@ public class FeatureGeneratorTest {
                 .allMatch(f -> Files.contentOf(f, Charset.defaultCharset()).equals("Something"));
     }
 
-    private URL url(String resource) {
+    private URL url(
+            String resource
+    ) {
         return Objects.requireNonNull(this.getClass().getClassLoader().getResource(resource));
     }
 
-    private String content(String resource) throws IOException {
+    private String content(
+            String resource
+    ) throws IOException {
         return IOUtils.toString(url(resource), Charset.defaultCharset());
     }
 
-    private void mockServer(HttpRequest expected, HttpResponse response) {
+    private void mockServer(
+            HttpRequest expected,
+            HttpResponse response
+    ) {
         mockServer(expected, response, Times.once());
     }
 
-    private void mockServer(HttpRequest expected, HttpResponse response, Times times) {
+    private void mockServer(
+            HttpRequest expected,
+            HttpResponse response,
+            Times times
+    ) {
         server.when(expected, times).respond(response);
+    }
+
+    private <T> T getField(
+            Object o,
+            String field,
+            Class<T> cls
+    ) throws NoSuchFieldException, IllegalAccessException {
+        Field buildField = o.getClass().getDeclaredField(field);
+        buildField.setAccessible(true);
+        return cls.cast(buildField.get(o));
     }
 
 }
