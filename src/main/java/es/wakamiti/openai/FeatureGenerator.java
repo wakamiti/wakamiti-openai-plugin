@@ -116,40 +116,42 @@ public class FeatureGenerator {
      *
      * @param featurePath the path where the feature file will be created
      * @param inputs      the inputs for generating the feature file
+     *
      * @return a CompletableFuture representing the asynchronous operation
      */
     private CompletableFuture<?> createFeature(Path featurePath, Map<String, Object> inputs) {
-        if (!Files.exists(featurePath) || featurePath.toFile().delete()) {
-            try {
-                if (!Files.exists(featurePath.getParent()) && !featurePath.getParent().toFile().mkdirs()) {
-                    throw new NoSuchFileException(featurePath.getParent().toString(), null, "Cannot create dir");
-                }
-                Path path = Files.createFile(featurePath);
-                String input = inputs.entrySet().stream()
-                        .map(Map.Entry::toString)
-                        .collect(Collectors.joining("\n"));
+        if (Files.exists(featurePath) && featurePath.toFile().delete()) {
+            LOGGER.warn("File '{}' cannot be delete. it will be overwritten.", featurePath);
+        }
 
-                ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
-                        .addUserMessage(prompt().concat(input))
-                        .model(ChatModel.GPT_4O)
-                        .build();
-                return client.async().chat().completions().create(params)
-                        .thenAccept(chatCompletion ->
-                                chatCompletion.choices().get(0).message().content().ifPresentOrElse(content -> {
-                                    try {
-                                        Files.write(path, content.getBytes());
-                                    } catch (IOException e) {
-                                        throw new WakamitiException(e.getMessage(), e);
-                                    }
-                                }, () -> {
-                                    throw new WakamitiException("Empty response");
-                                })
-                        );
-            } catch (Exception e) {
-                throw new WakamitiException("Cannot create feature [{}]", featurePath, e);
+        try {
+            if (!Files.exists(featurePath.getParent()) && !featurePath.getParent().toFile().mkdirs()) {
+                throw new NoSuchFileException(featurePath.getParent().toString(), null, "Cannot create dir");
             }
-        } else {
-            return CompletableFuture.runAsync(() -> {});
+            Path path = Files.createFile(featurePath);
+            String input = inputs.entrySet().stream()
+                    .map(Map.Entry::toString)
+                    .collect(Collectors.joining("\n"));
+
+            ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
+                    .addUserMessage(prompt().concat(input))
+                    .model(ChatModel.GPT_4O)
+                    .build();
+            return client.async().chat().completions().create(params)
+                    .thenAccept(chatCompletion ->
+                            chatCompletion.choices().get(0).message().content().ifPresentOrElse(content -> {
+                                try {
+                                    Files.write(path, content.getBytes());
+                                } catch (IOException e) {
+                                    throw new WakamitiException(e.getMessage(), e);
+                                }
+                                LOGGER.info("File '{}' created", featurePath);
+                            }, () -> {
+                                throw new WakamitiException("Empty response");
+                            })
+                    );
+        } catch (Exception e) {
+            throw new WakamitiException("Cannot create feature [{}]", featurePath, e);
         }
     }
 
