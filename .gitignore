@@ -1,0 +1,14 @@
+.project
+.idea
+.settings
+.vscode
+.factorypath
+/**/*.iml
+/**/target/
+!/docs/**/target/
+/**/.attach_pid*
+package-lock.json
+/tmp/
+*.log
+.flattened-pom.xml
+.mvn/wrapper/maven-wrapper.jar

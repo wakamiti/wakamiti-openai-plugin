@@ -1,1 +1,1 @@
-# wakamiti-chatgpt-plugin
+# wakamiti-openai-plugin

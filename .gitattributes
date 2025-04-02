@@ -1,0 +1,13 @@
+
+*       eol=lf
+
+*.sh    eol=lf
+wakamiti  eol=lf
+mvnw    eol=lf
+
+*.bat   eol=crlf
+*.cmd   eol=crlf
+
+*.png binary
+*.gif binary
+*.apk binary
