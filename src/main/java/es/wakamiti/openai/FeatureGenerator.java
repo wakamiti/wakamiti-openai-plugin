@@ -38,7 +38,8 @@ public class FeatureGenerator {
 
     private static final WakamitiLogger LOGGER = WakamitiLogger.of(FeatureGenerator.class);
     private static final String FEATURE_EXTENSION = ".feature";
-    private static final String DEFAULT_PROMPT = "/generator/prompt.txt";
+    private static final String PROMPT_DIR = "/generator/prompt.txt";
+    private static final String PROMPT = prompt();
 
     private final OpenAIOkHttpClient.Builder clientBuilder;
     private final Map<String, String> apiDocs;
@@ -57,6 +58,19 @@ public class FeatureGenerator {
     ) {
         this.clientBuilder = OpenAIOkHttpClient.builder().apiKey(apiKey);
         this.apiDocs = parse(apiDocs);
+    }
+
+    /**
+     * Reads the default prompt.
+     *
+     * @return the prompt as a string
+     */
+    private static String prompt() {
+        try (InputStream in = Objects.requireNonNull(FeatureGenerator.class.getResourceAsStream(PROMPT_DIR))) {
+            return IOUtils.toString(in, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new WakamitiException(e);
+        }
     }
 
     /**
@@ -99,19 +113,6 @@ public class FeatureGenerator {
     }
 
     /**
-     * Reads the default prompt.
-     *
-     * @return the prompt as a string
-     */
-    private String prompt() {
-        try (InputStream in = Objects.requireNonNull(getClass().getResourceAsStream(DEFAULT_PROMPT))) {
-            return IOUtils.toString(in, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new WakamitiException(e);
-        }
-    }
-
-    /**
      * Creates a feature file at the specified path with the given inputs.
      *
      * @param featurePath the path where the feature file will be created
@@ -134,7 +135,7 @@ public class FeatureGenerator {
                     .collect(Collectors.joining("\n"));
 
             ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
-                    .addUserMessage(prompt().concat(input))
+                    .addUserMessage(PROMPT.concat(input))
                     .model(ChatModel.GPT_4O)
                     .build();
             return client.async().chat().completions().create(params)
