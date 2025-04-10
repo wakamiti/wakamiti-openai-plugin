@@ -116,7 +116,12 @@ public class Util {
             String url
     ) {
         try {
-            return new File(url).exists();
+            File file = new File(url);
+            if (file.exists()) {
+                return true;
+            }
+            new java.net.URL(url);
+            return true;
         } catch (Exception e) {
             return false;
         }
