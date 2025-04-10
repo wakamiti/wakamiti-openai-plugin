@@ -19,7 +19,7 @@ import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 
-import java.net.URL;
+import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,16 +29,18 @@ import java.util.stream.Collectors;
  */
 public class Util {
 
-    private static final WakamitiLogger LOGGER = WakamitiLogger.of(FeatureGenerator.class);
     public static final String PATH_SEPARATOR = "/";
+    private static final WakamitiLogger LOGGER = WakamitiLogger.of(FeatureGenerator.class);
 
 
-    private Util() {}
+    private Util() {
+    }
 
     /**
      * Parses the given OpenAPI schema and returns a map of operation IDs to their corresponding JSON representations.
      *
      * @param schema the OpenAPI schema as a string
+     *
      * @return a map of operation IDs to JSON representations of the OpenAPI fragments
      */
     public static Map<String, String> parse(String schema) {
@@ -65,6 +67,7 @@ public class Util {
      * Fragments the given OpenAPI schema by operation and returns a map of operation IDs to OpenAPI fragments.
      *
      * @param openAPI the OpenAPI schema
+     *
      * @return a map of operation IDs to OpenAPI fragments
      */
     private static Map<String, OpenAPI> fragmentByOperation(
@@ -89,6 +92,7 @@ public class Util {
      * Converts the given object to a JSON string.
      *
      * @param o the object to convert
+     *
      * @return the JSON representation of the object
      */
     private static String toJson(Object o) {
@@ -105,14 +109,14 @@ public class Util {
      * Checks if the given string is a URL.
      *
      * @param url the string to check
+     *
      * @return true if the string is a URL, false otherwise
      */
     private static boolean isLocation(
             String url
     ) {
         try {
-            new URL(url);
-            return true;
+            return new File(url).exists();
         } catch (Exception e) {
             return false;
         }
@@ -122,6 +126,7 @@ public class Util {
      * Creates a copy of the given PathItem.
      *
      * @param item the PathItem to copy
+     *
      * @return a copy of the PathItem
      */
     private static PathItem copy(
@@ -141,6 +146,7 @@ public class Util {
      *
      * @param endpoint the endpoint
      * @param path     the PathItem
+     *
      * @return the operation ID
      */
     private static String operationId(
@@ -164,6 +170,7 @@ public class Util {
      * Formats the given endpoint to a string suitable for use in an operation ID.
      *
      * @param endpoint the endpoint
+     *
      * @return the formatted endpoint
      */
     private static String endpointFormat(String endpoint) {

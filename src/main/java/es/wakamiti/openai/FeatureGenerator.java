@@ -142,7 +142,7 @@ public class FeatureGenerator {
                     .thenAccept(chatCompletion ->
                             chatCompletion.choices().get(0).message().content().ifPresentOrElse(content -> {
                                 try {
-                                    Files.write(path, content.getBytes());
+                                    Files.write(path, adjustments(content).getBytes());
                                 } catch (IOException e) {
                                     throw new WakamitiException(e.getMessage(), e);
                                 }
@@ -156,4 +156,14 @@ public class FeatureGenerator {
         }
     }
 
+    private String adjustments(
+            String content
+    ) {
+        return content
+                .replaceAll("^```gherkin", "")
+                .replaceAll("```$", "")
+                .trim();
+    }
+
 }
+
