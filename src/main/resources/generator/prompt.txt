@@ -54,8 +54,8 @@ te indique en el input.
   'apiId' (si no está, no incluir ese tag) y un 'operationId' (siempre se deberá informar).
 - Cada escenario deberá contener un tag identificativo y único para todos los escenarios que generes con el patrón
   '@ID-*'.
-- Todos los escenarios que prueben casos de error (con códigos 4xx), deben contener siempre el tag '@error' y se
-  colocarán al final, el caso principal (caso feliz) el tag '@smoke' y solo habrá 1 por feature, el primero.
+- Solo los escenarios que prueben casos de error (con códigos 4xx) deben contener el tag '@error' y se colocarán al
+  final, el caso principal (caso feliz) el tag '@smoke' y solo habrá 1 por feature, el primero.
 
 <ESQUEMA>
 #language: {lenguaje}
@@ -103,9 +103,9 @@ Característica: Una descripción de ejemplo
     * resto de pasos
 
 
-# Dudas:
-# Una duda sobre al comportamiento funcional del contrato
-# Otra duda
-
+# Dudas (priorizadas por impacto):
+# 1. [Duda crítica sobre validación de negocio]
+# 2. [Duda técnica sobre formato de campo]
+# ...
 
 <INPUT>
